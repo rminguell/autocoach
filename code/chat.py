@@ -1,15 +1,13 @@
-import os
 import sqlite3
 import warnings
 from datetime import datetime
-from paths import CHAT_HISTORY_DB_FPATH, APP_CONFIG_FPATH, PROMPT_CONFIG_FPATH, OUTPUTS_DIR
+from paths import CHAT_HISTORY_DB_FPATH, APP_CONFIG_FPATH, PROMPT_CONFIG_FPATH
 from langchain_community.chat_message_histories.sql import SQLChatMessageHistory
 from langchain.memory.summary_buffer import ConversationSummaryBufferMemory
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, SystemMessage
 from utils import load_env, load_yaml_config
-import logging
-from db_rag import retrieve_relevant_documents, setup_logging
+from db_connection import retrieve_relevant_documents 
 from prompt_builder import build_prompt_from_config
 
 warnings.filterwarnings("ignore")
@@ -70,10 +68,12 @@ class ChatWithMemory:
         prompt_config = load_yaml_config(PROMPT_CONFIG_FPATH)
         rag_assistant_prompt = build_prompt_from_config(
             prompt_config["rag_assistant_prompt"], 
-            input_data = relevant_documents + recent_messages + summary)
+            input_data = relevant_documents)
         
         # Build messages
         messages = [SystemMessage(content=rag_assistant_prompt)]
+        messages.append(SystemMessage(content=recent_messages))
+        messages.append(SystemMessage(content=summary))
         messages.append(HumanMessage(content=user_input))
 
 
@@ -157,72 +157,3 @@ class ChatWithMemory:
             print(f"{i:2d}. {msg_type}: {content}")
             if i < len(recent_messages):
                 print()
-
-
-def main():
-    setup_logging
-    
-    print("🤖 AI Chat with Persistent Memory")
-    print("=" * 40)
-
-    # Ensure output directory exists
-    os.makedirs(os.path.dirname(CHAT_HISTORY_DB_FPATH), exist_ok=True)
-
-    chat = ChatWithMemory()
-
-    # Show existing sessions
-    sessions = chat.list_sessions()
-    if sessions:
-        print(f"\nExisting sessions: {', '.join(sessions)}")
-
-    # Get session name
-    session_name = input("\nEnter session name (or press Enter for new): ").strip()
-    if not session_name:
-        session_name = None
-
-    # Start session
-    chat.start_session(session_name)
-
-    print(f"\n💬 Chatting in session: {chat.current_session}")
-    print("Commands:")
-    print("  'quit' - exit")
-    print("  'sessions' - list all sessions")
-    print("  'history' - show current session messages")
-    print("  'view <session_name>' - show messages from specific session")
-    print("-" * 40)
-
-    # Chat loop
-    while True:
-        try:
-            user_input = input("\nYou: ").strip()
-
-            if user_input.lower() == "quit":
-                print("Goodbye! 👋")
-                break
-            elif user_input.lower() == "sessions":
-                sessions = chat.list_sessions()
-                print(f"All sessions: {', '.join(sessions) if sessions else 'None'}")
-                continue
-            elif user_input.lower() == "history":
-                chat.display_session_messages(chat.current_session)
-                continue
-            elif user_input.lower().startswith("view "):
-                session_to_view = user_input[5:].strip()
-                if session_to_view:
-                    chat.display_session_messages(session_to_view, max_messages=10)
-                else:
-                    print("Usage: view <session_name>")
-                continue
-            elif user_input:
-                response = chat.chat(user_input)
-                print(f"AI: {response}")
-
-        except KeyboardInterrupt:
-            print("\n\nGoodbye! 👋")
-            break
-        except Exception as e:
-            print(f"Error: {e}")
-
-
-if __name__ == "__main__":
-    main()

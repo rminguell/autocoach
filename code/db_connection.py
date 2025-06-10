@@ -1,15 +1,10 @@
 import os
 import logging
 from dotenv import load_dotenv
-from utils import load_yaml_config
-from prompt_builder import build_prompt_from_config
-from langchain_google_genai import ChatGoogleGenerativeAI
-from paths import APP_CONFIG_FPATH, PROMPT_CONFIG_FPATH, OUTPUTS_DIR
-from db_ingest import get_db_collection, embed_documents
-from langchain_core.messages import HumanMessage, SystemMessage
+from paths import OUTPUTS_DIR
+from db_start import get_db_collection, embed_documents
 
 logger = logging.getLogger()
-
 
 def setup_logging():
 
@@ -84,54 +79,3 @@ def retrieve_relevant_documents(
 
     return relevant_results["documents"]
 
-
-def respond_to_query(
-    prompt_config: dict,
-    query: str,
-    llm: str,
-    n_results: int = 5,
-    threshold: float = 0.3,
-) -> str:
-    """
-    Respond to a query using the ChromaDB database.
-    """
-
-    relevant_documents = retrieve_relevant_documents(
-        query, n_results=n_results, threshold=threshold
-    )
-    print(relevant_documents);
-    input_data = (
-        f"Relevant documents:\n\n{relevant_documents}\n\nUser's question:\n\n{query}"
-    )
-
-    rag_assistant_prompt = build_prompt_from_config(
-        prompt_config, input_data=input_data
-    )
-
-    llm = ChatGoogleGenerativeAI(model=llm, temperature=0.7)
-    response = llm.invoke(rag_assistant_prompt)
-    return response.content
-
-
-if __name__ == "__main__":
-    setup_logging()
-    app_config = load_yaml_config(APP_CONFIG_FPATH)
-    prompt_config = load_yaml_config(PROMPT_CONFIG_FPATH)
-
-    rag_assistant_prompt = prompt_config["rag_assistant_prompt"]
-
-    vectordb_params = app_config["vectordb"]
-    llm = app_config["llm"]
-    query="quiero dejar de fumar, ¿qué me recomiendas?"
-   
-    """response = respond_to_query(
-        prompt_config=rag_assistant_prompt,
-        query=query,
-        llm=llm,
-        **vectordb_params,
-    )"""
-
-    relevant_documents = retrieve_relevant_documents(
-        query, **vectordb_params
-    )
-    print(relevant_documents);
