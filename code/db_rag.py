@@ -99,19 +99,7 @@ def respond_to_query(
     relevant_documents = retrieve_relevant_documents(
         query, n_results=n_results, threshold=threshold
     )
-
-    logging.info("-" * 100)
-    logging.info("Relevant documents: \n")
-    for doc in relevant_documents:
-        logging.info(doc)
-        logging.info("-" * 100)
-    logging.info("")
-
-    logging.info("User's question:")
-    logging.info(query)
-    logging.info("")
-    logging.info("-" * 100)
-    logging.info("")
+    print(relevant_documents);
     input_data = (
         f"Relevant documents:\n\n{relevant_documents}\n\nUser's question:\n\n{query}"
     )
@@ -119,9 +107,6 @@ def respond_to_query(
     rag_assistant_prompt = build_prompt_from_config(
         prompt_config, input_data=input_data
     )
-
-    logging.info(f"RAG assistant prompt: {rag_assistant_prompt}")
-    logging.info("")
 
     llm = ChatGoogleGenerativeAI(model=llm, temperature=0.7)
     response = llm.invoke(rag_assistant_prompt)
@@ -137,31 +122,16 @@ if __name__ == "__main__":
 
     vectordb_params = app_config["vectordb"]
     llm = app_config["llm"]
+    query="quiero dejar de fumar, ¿qué me recomiendas?"
+   
+    """response = respond_to_query(
+        prompt_config=rag_assistant_prompt,
+        query=query,
+        llm=llm,
+        **vectordb_params,
+    )"""
 
-    exit_app = False
-    while not exit_app:
-        query = input(
-            "Enter a question, 'config' to change the parameters, or 'exit' to quit: "
-        )
-        if query == "exit":
-            exit_app = True
-            exit()
-
-        elif query == "config":
-            threshold = float(input("Enter the retrieval threshold: "))
-            n_results = int(input("Enter the Top K value: "))
-            vectordb_params = {
-                "threshold": threshold,
-                "n_results": n_results,
-            }
-            continue
-
-        response = respond_to_query(
-            prompt_config=rag_assistant_prompt,
-            query=query,
-            llm=llm,
-            **vectordb_params,
-        )
-        logging.info("-" * 100)
-        logging.info("LLM response:")
-        logging.info(response + "\n\n")
+    relevant_documents = retrieve_relevant_documents(
+        query, **vectordb_params
+    )
+    print(relevant_documents);
