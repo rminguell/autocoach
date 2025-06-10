@@ -53,37 +53,27 @@ class ChatWithMemory:
         """Send message and get response."""
         if not self.memory:
             raise ValueError("No active session. Call start_session() first.")
-       
-        prompt_config = load_yaml_config(PROMPT_CONFIG_FPATH)
-        rag_assistant_prompt = build_prompt_from_config(prompt_config["rag_assistant_prompt"], input_data=user_input)
-        relevant_documents = retrieve_relevant_documents(user_input, n_results=5, threshold=0.3)
-
-        logging.info("-" * 100)
-        logging.info("Relevant documents: \n")
-        for doc in relevant_documents:
-            logging.info(doc)
-            logging.info("-" * 100)
-        logging.info("")
-
-        logging.info("User's question:")
-        logging.info(user_input)
-        logging.info("")
-        logging.info("-" * 100)
-        logging.info("")
-
-        documents = (
-            f"Relevant documents:\n\n{relevant_documents}\n\n"
-        )
         
-        # Get chat history (recent messages)
-        memory_vars = self.memory.load_memory_variables({})
-        chat_history = memory_vars.get("chat_history", [])
-        print(f"Chat history: {chat_history}")
+    
+        app_config = load_yaml_config(APP_CONFIG_FPATH)
+        vectordb_params = app_config["vectordb"]
+        relevant_documents = retrieve_relevant_documents(user_input, **vectordb_params)
+        relevant_documents = (f"RELEVANT DOCUMENTS:\n\n{relevant_documents}\n\n")
+        print(relevant_documents)
+        recent_messages= self.memory.buffer
+        recent_messages = (f"RECENT MESSAGES:\n\n{recent_messages}\n\n")
+        print(recent_messages)
+        summary = self.memory.moving_summary_buffer
+        summary = (f"EARLIER CONVERSATION SUMMARY:\n\n{summary}\n\n")
+        print(summary)
+
+        prompt_config = load_yaml_config(PROMPT_CONFIG_FPATH)
+        rag_assistant_prompt = build_prompt_from_config(
+            prompt_config["rag_assistant_prompt"], 
+            input_data = relevant_documents + recent_messages + summary)
         
         # Build messages
         messages = [SystemMessage(content=rag_assistant_prompt)]
-        messages.extend(documents)
-        messages.extend(chat_history)
         messages.append(HumanMessage(content=user_input))
 
 
