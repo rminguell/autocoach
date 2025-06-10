@@ -1,32 +1,11 @@
-"""
-Prompt template construction functions for building modular prompts.
-"""
-
 from typing import Union, List, Optional, Dict, Any
 
 
 def lowercase_first_char(text: str) -> str:
-    """Lowercases the first character of a string.
-
-    Args:
-        text: Input string.
-
-    Returns:
-        The input string with the first character lowercased.
-    """
     return text[0].lower() + text[1:] if text else text
 
 
 def format_prompt_section(lead_in: str, value: Union[str, List[str]]) -> str:
-    """Formats a prompt section by joining a lead-in with content.
-
-    Args:
-        lead_in: Introduction sentence for the section.
-        value: Section content, as a string or list of strings.
-
-    Returns:
-        A formatted string with the lead-in followed by the content.
-    """
     if isinstance(value, list):
         formatted_value = "\n".join(f"- {item}" for item in value)
     else:
@@ -39,19 +18,6 @@ def build_prompt_from_config(
     input_data: str = "",
     app_config: Optional[Dict[str, Any]] = None,
 ) -> str:
-    """Builds a complete prompt string based on a config dictionary.
-
-    Args:
-        config: Dictionary specifying prompt components.
-        input_data: Content to be summarized or processed.
-        app_config: Optional app-wide configuration (e.g., reasoning strategies).
-
-    Returns:
-        A fully constructed prompt as a string.
-
-    Raises:
-        ValueError: If the required 'instruction' field is missing.
-    """
     prompt_parts = []
 
     if role := config.get("role"):
@@ -112,75 +78,29 @@ def build_prompt_from_config(
     return "\n\n".join(prompt_parts)
 
 
-def print_prompt_preview(prompt: str, max_length: int = 500) -> None:
-    """Prints a preview of the constructed prompt for debugging purposes.
-
-    Args:
-        prompt: The constructed prompt string.
-        max_length: Maximum number of characters to show.
-    """
-    print("=" * 60)
-    print("CONSTRUCTED PROMPT:")
-    print("=" * 60)
-    if len(prompt) > max_length:
-        print(prompt[:max_length] + "...")
-        print(f"\n[Truncated - Full prompt is {len(prompt)} characters]")
-    else:
-        print(prompt)
-    print("=" * 60)
-
-
 def build_system_prompt_from_config(
     config: Dict[str, Any],
     publication_content: str = "",
 ) -> str:
-    """Builds a system prompt string based on a config dictionary.
-
-    Args:
-        config: Dictionary specifying system prompt components.
-        publication_content: The publication content to include in the system prompt.
-
-    Returns:
-        A fully constructed system prompt as a string.
-
-    Raises:
-        ValueError: If the required 'role' field is missing.
-    """
     prompt_parts = []
 
-    # Role is required for system prompts
     role = config.get("role")
     if not role:
         raise ValueError("Missing required field: 'role'")
     prompt_parts.append(f"You are {lowercase_first_char(role.strip())}.")
 
-    # Add behavioral constraints
     if constraints := config.get("output_constraints"):
-        prompt_parts.append(
-            format_prompt_section(
-                "Follow these important guidelines:", constraints
-            )
-        )
+        prompt_parts.append(format_prompt_section("Follow these important guidelines:", constraints))
 
-    # Add style and tone guidelines
     if tone := config.get("style_or_tone"):
-        prompt_parts.append(
-            format_prompt_section(
-                "Communication style:", tone
-            )
-        )
+        prompt_parts.append(format_prompt_section("Communication style:", tone))
 
-    # Add output format requirements
     if format_ := config.get("output_format"):
-        prompt_parts.append(
-            format_prompt_section("Response formatting:", format_)
-        )
+        prompt_parts.append(format_prompt_section("Response formatting:", format_))
 
-    # Add goal if specified
     if goal := config.get("goal"):
         prompt_parts.append(f"Your primary objective: {goal}")
 
-    # Include publication content if provided
     if publication_content:
         prompt_parts.append(
             "Base your responses on this publication content:\n\n"

@@ -5,26 +5,15 @@ from db_connection import setup_logging
 
 def main():
     setup_logging()
-
-
-    # Ensure output directory exists
     os.makedirs(os.path.dirname(CHAT_HISTORY_DB_FPATH), exist_ok=True)
-
     chat = ChatWithMemory()
-
-    # Show existing sessions
     sessions = chat.list_sessions()
     if sessions:
         print(f"\nExisting usernames: {', '.join(sessions)}")
-
-    # Get session name
     session_name = input("\nEnter username (or press Enter for guest): ").strip()
     if not session_name:
         session_name = None
-
-    # Start session
     chat.start_session(session_name)
-
     print(f"\n💬 Chatting as: {chat.current_session}")
     print("Commands:")
     print("  'quit' - exit")
@@ -32,12 +21,9 @@ def main():
     print("  'history' - show current session messages")
     print("  'view <session_name>' - show messages from specific user")
     print("-" * 40)
-
-    # Chat loop
     while True:
         try:
             user_input = input("\nYou: ").strip()
-
             if user_input.lower() == "quit":
                 print("Goodbye! 👋")
                 break
@@ -58,9 +44,8 @@ def main():
             elif user_input:
                 response = chat.chat(user_input)
                 print(f"AI: {response}")
-
         except KeyboardInterrupt:
-            print("\n\nGoodbye! 👋")
+            print("\nGoodbye! 👋")
             break
         except Exception as e:
             print(f"Error: {e}")
