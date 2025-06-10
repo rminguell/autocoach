@@ -88,7 +88,7 @@ def retrieve_relevant_documents(
 def respond_to_query(
     prompt_config: dict,
     query: str,
-    llm: ChatGoogleGenerativeAI,
+    llm: str,
     n_results: int = 5,
     threshold: float = 0.3,
 ) -> str:
@@ -123,6 +123,7 @@ def respond_to_query(
     logging.info(f"RAG assistant prompt: {rag_assistant_prompt}")
     logging.info("")
 
+    llm = ChatGoogleGenerativeAI(model=llm, temperature=0.7)
     response = llm.invoke(rag_assistant_prompt)
     return response.content
 
