@@ -28,7 +28,7 @@ class ChatWithMemory:
         self.current_session = session_name
         self.memory = ConversationSummaryBufferMemory(
             llm=self.llm,
-            max_token_limit=2000,
+            max_token_limit=200,
             memory_key="chat_history",
             return_messages=True
         )
